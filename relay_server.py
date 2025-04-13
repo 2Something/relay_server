@@ -38,11 +38,24 @@ async def main():
     # Start WebSocket server asynchronously
     await ws_server
 
-    # Start the HTTP server (aiohttp) without blocking
-    return web.AppRunner(app).setup()
+    # Start the HTTP server (aiohttp) properly
+    runner = web.AppRunner(app)
+    await runner.setup()  # Properly await the setup
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()  # Start the site
 
-# Do not use asyncio.run(), since the event loop is already running
+    print(f"Server started on port {port}")
+    # Run the server indefinitely
+    while True:
+        await asyncio.sleep(3600)  # Keep running the server
+
+# Main execution logic
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()  # Get the current event loop
+    try:
+        loop = asyncio.get_running_loop()  # Try to get the current running event loop
+    except RuntimeError:
+        loop = asyncio.new_event_loop()  # Create a new event loop if none exists
+        asyncio.set_event_loop(loop)  # Set the newly created event loop as the current one
+
     loop.create_task(main())  # Run the main function as a task
-    loop.run_forever()  # Keep the event loop running to allow WebSocket and HTTP servers to continue running
+    loop.run_forever()  # Keep the event loop running
