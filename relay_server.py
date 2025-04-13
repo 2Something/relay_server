@@ -35,8 +35,8 @@ async def main():
     # WebSocket server
     ws_server = websockets.serve(relay, "0.0.0.0", port)
 
-    # Run the WebSocket server asynchronously
-    await asyncio.create_task(ws_server)
+    # Await the WebSocket server directly
+    await ws_server
 
     # Start the HTTP server (aiohttp)
     await web.run_app(app, port=port)  # Await the web server
