@@ -21,6 +21,12 @@ async def relay(websocket, path):
         clients.remove(websocket)
         print("Client disconnected.")
 
+# Handle non-WebSocket connections (like HEAD requests)
+async def handle_non_websocket(request):
+    if request.method == 'HEAD':
+        return web.Response(status=200)  # Respond to HEAD request with status 200
+    return web.Response(text="Invalid request method", status=405)  # Return 405 for other methods
+
 # HTTP health check
 async def health_check(request):
     return web.Response(text="OK")
@@ -28,9 +34,10 @@ async def health_check(request):
 async def main():
     port = int(os.environ.get("PORT", 10000))  # Render provides PORT
 
-    # Create an aiohttp application and add the health check route
+    # Create an aiohttp application and add routes
     app = web.Application()
     app.router.add_get('/health', health_check)
+    app.router.add_any('/relay', handle_non_websocket)  # Handle HEAD/other non-websocket requests
 
     # WebSocket server
     ws_server = websockets.serve(relay, "0.0.0.0", port)
@@ -38,7 +45,7 @@ async def main():
     # Start WebSocket server asynchronously
     await ws_server
 
-    # Start the HTTP server (aiohttp) properly
+    # Start the HTTP server (aiohttp)
     runner = web.AppRunner(app)
     await runner.setup()  # Properly await the setup
     site = web.TCPSite(runner, '0.0.0.0', port)
