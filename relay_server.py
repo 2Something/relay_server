@@ -1,36 +1,28 @@
-import socket
-import threading
+import asyncio
+import websockets
+import os
 
-clients = []
+clients = set()
 
-def handle_client(conn, addr):
-    print(f"[+] {addr} connected.")
-    clients.append(conn)
+async def relay(websocket, path):
+    print("New client connected.")
+    clients.add(websocket)
     try:
-        while True:
-            data = conn.recv(4096)
-            if not data:
-                break
-            # Forward data to other clients
-            for c in clients:
-                if c != conn:
-                    c.sendall(data)
-    except Exception as e:
-        print(f"[!] {addr} error: {e}")
+        async for message in websocket:
+            for client in clients:
+                if client != websocket:
+                    await client.send(message)
+    except:
+        pass
     finally:
-        conn.close()
-        clients.remove(conn)
-        print(f"[-] {addr} disconnected.")
+        clients.remove(websocket)
+        print("Client disconnected.")
 
-def start():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", 10000))  # Relay port
-    server.listen()
-    print("[*] Relay server started on port 10000")
-
-    while True:
-        conn, addr = server.accept()
-        threading.Thread(target=handle_client, args=(conn, addr)).start()
+async def main():
+    port = int(os.environ.get("PORT", 10000))  # Render sets PORT env var
+    print(f"Starting WebSocket relay server on port {port}")
+    async with websockets.serve(relay, "0.0.0.0", port):
+        await asyncio.Future()
 
 if __name__ == "__main__":
-    start()
+    asyncio.run(main())
