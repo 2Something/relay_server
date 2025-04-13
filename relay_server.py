@@ -1,25 +1,29 @@
 import asyncio
-import websockets
 import os
 from aiohttp import web
 
 clients = set()
 
 # WebSocket handler
-async def relay(websocket, path):
+async def handle_websocket(request):
+    websocket = web.WebSocketResponse()
+    await websocket.prepare(request)
     print("New client connected.")
     clients.add(websocket)
+
     try:
         async for message in websocket:
-            # Broadcast to other clients
-            for client in clients:
-                if client != websocket:
-                    await client.send(message)
+            if message.type == web.WSMessageType.TEXT:
+                # Broadcast to other clients
+                for client in clients:
+                    if client != websocket:
+                        await client.send_str(message.data)
     except:
         pass
     finally:
         clients.remove(websocket)
         print("Client disconnected.")
+    return websocket
 
 # Handle non-WebSocket connections (like HEAD requests)
 async def handle_head(request):
@@ -35,12 +39,7 @@ async def main():
     app = web.Application()
     app.router.add_get('/health', health_check)
     app.router.add_route('HEAD', '/relay', handle_head)  # Handle HEAD requests
-
-    # WebSocket server
-    ws_server = websockets.serve(relay, "0.0.0.0", port)
-
-    # Start WebSocket server asynchronously
-    await ws_server
+    app.router.add_get('/relay', handle_websocket)  # WebSocket handler for /relay route
 
     # Start the HTTP server (aiohttp)
     runner = web.AppRunner(app)
