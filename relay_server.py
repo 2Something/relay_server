@@ -41,7 +41,8 @@ async def main():
     # Start the HTTP server (aiohttp) without blocking
     return web.AppRunner(app).setup()
 
+# Do not use asyncio.run(), since the event loop is already running
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()  # Get the current event loop
-    loop.run_until_complete(main())  # Run the main function in the current event loop
-    loop.run_forever()  # Keep the loop running to allow WebSocket and HTTP servers to continue running
+    loop.create_task(main())  # Run the main function as a task
+    loop.run_forever()  # Keep the event loop running to allow WebSocket and HTTP servers to continue running
