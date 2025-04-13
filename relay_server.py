@@ -35,11 +35,13 @@ async def main():
     # WebSocket server
     ws_server = websockets.serve(relay, "0.0.0.0", port)
 
-    # Await the WebSocket server directly
+    # Start WebSocket server asynchronously
     await ws_server
 
-    # Start the HTTP server (aiohttp)
-    await web.run_app(app, port=port)  # Await the web server
+    # Start the HTTP server (aiohttp) without blocking
+    return web.AppRunner(app).setup()
 
 if __name__ == "__main__":
-    asyncio.run(main())  # Correctly await the main coroutine
+    loop = asyncio.get_event_loop()  # Get the current event loop
+    loop.run_until_complete(main())  # Run the main function in the current event loop
+    loop.run_forever()  # Keep the loop running to allow WebSocket and HTTP servers to continue running
