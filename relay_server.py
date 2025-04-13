@@ -42,7 +42,7 @@ async def main():
     loop.create_task(ws_server)
 
     # Start the HTTP server (aiohttp)
-    web.run_app(app, port=port)
+    await web.run_app(app, port=port)  # Use `await` to properly run the app
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())  # Correctly await the main coroutine
