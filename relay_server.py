@@ -22,12 +22,9 @@ async def relay(websocket, path):
         print("Client disconnected.")
 
 # Handle non-WebSocket connections (like HEAD requests)
-async def handle_non_websocket(request):
-    if request.method == 'HEAD':
-        return web.Response(status=200)  # Respond to HEAD request with status 200
-    return web.Response(text="Invalid request method", status=405)  # Return 405 for other methods
+async def handle_head(request):
+    return web.Response(status=200)  # Respond to HEAD request with status 200
 
-# HTTP health check
 async def health_check(request):
     return web.Response(text="OK")
 
@@ -37,7 +34,7 @@ async def main():
     # Create an aiohttp application and add routes
     app = web.Application()
     app.router.add_get('/health', health_check)
-    app.router.add_any('/relay', handle_non_websocket)  # Handle HEAD/other non-websocket requests
+    app.router.add_route('HEAD', '/relay', handle_head)  # Handle HEAD requests
 
     # WebSocket server
     ws_server = websockets.serve(relay, "0.0.0.0", port)
